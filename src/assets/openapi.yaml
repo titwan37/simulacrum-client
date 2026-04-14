@@ -1,0 +1,139 @@
+openapi: 3.0.0
+info:
+  title: "Synology Simulacrum Telemetry API"
+  description: "High-frequency system resource monitoring API for Synology NAS. Features background historical buffering and non-blocking telemetry."
+  version: "1.2.0"
+servers:
+  - url: "/api-simulacrum"
+    description: "Production Proxy via Hub Gateway"
+  - url: "http://192.168.192.123:8080/api"
+    description: "Direct NAS LAN connection"
+paths:
+  /stats:
+    get:
+      summary: "Retrieve real-time system metrics and 5-minute historical buffers."
+      description: "Returns a complete snapshot of RAM, CPU, Thermal, and Disk usage along with historical data for trend analysis."
+      responses:
+        "200":
+          description: "A JSON object containing system health and resource metrics."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SystemStats"
+        "500":
+          description: "Internal Server Error (Proc filesystem read failure)"
+
+components:
+  schemas:
+    SystemStats:
+      type: object
+      properties:
+        ram_total_mb:
+          type: integer
+          description: "Total physical RAM in Megabytes."
+        ram_free_mb:
+          type: integer
+          description: "Available RAM in Megabytes."
+        ram_percent:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100
+          description: "Percentage of RAM used."
+        swap_total_mb:
+          type: integer
+        swap_free_mb:
+          type: integer
+        swap_percent:
+          type: integer
+        cpu_percent:
+          type: integer
+          description: "Current overall CPU load."
+        cpu_temp_c:
+          type: number
+          format: float
+          description: "CPU core temperature in Celsius."
+        disk_percent:
+          type: integer
+          description: "Overall storage utilization across all volumes."
+        disk_total_gb:
+          type: integer
+        disk_free_gb:
+          type: integer
+        volumes:
+          type: array
+          items:
+            $ref: "#/components/schemas/VolumeInfo"
+        net_rx_mbps:
+          type: number
+          format: double
+          description: "Real-time download throughput in Mbps."
+        net_tx_mbps:
+          type: number
+          format: double
+          description: "Real-time upload throughput in Mbps."
+        uptime_seconds:
+          type: integer
+          description: "System uptime since last boot."
+        load_avg:
+          type: number
+          format: float
+          description: "1-minute system load average."
+        cpu_history:
+          type: array
+          items:
+            type: integer
+          description: "Last 300 CPU load datapoints (1s intervals)."
+        os_name:
+          type: string
+          description: "Operating system distribution and version."
+        kernel_version:
+          type: string
+          description: "Linux kernel release version."
+        cpu_model:
+          type: string
+          description: "Physical CPU model name."
+        sys_time:
+          type: string
+          description: "Local NAS system time (YYYY-MM-DD HH:MM:SS)."
+        top_processes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProcessInfo"
+          description: "List of the top 10 CPU-consuming processes."
+        rx_history:
+          type: array
+          items:
+            type: number
+          description: "Last 300 Download Mbps datapoints (1s intervals)."
+        tx_history:
+          type: array
+          items:
+            type: number
+          description: "Last 300 Upload Mbps datapoints (1s intervals)."
+
+    VolumeInfo:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Volume 1"
+        percent:
+          type: integer
+          description: "Utilization percentage for this specific volume."
+
+    ProcessInfo:
+      type: object
+      properties:
+        pid:
+          type: integer
+          description: "Process identifier."
+        name:
+          type: string
+          description: "Process executable name."
+        cpu:
+          type: integer
+          description: "Estimated CPU utilization percentage."
+        mem:
+          type: integer
+          description: "Resident Set Size (RSS) in Megabytes."

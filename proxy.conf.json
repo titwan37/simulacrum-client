@@ -1,0 +1,11 @@
+{
+  "/api-simulacrum": {
+    "target": "http://192.168.192.123:8080",
+    "pathRewrite": {
+      "^/api-simulacrum": "/api"
+    },
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  }
+}

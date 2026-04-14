@@ -1,0 +1,113 @@
+---
+- name: Play 1 - Deploy C++ Backend to Synology NAS
+  hosts: nas
+  gather_facts: no
+  
+  vars_prompt:
+    - name: nas_password
+      prompt: "🔓 Enter Password for Synology NAS (titwan)"
+      private: yes
+
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+    ansible_ssh_pass: "{{ nas_password }}"
+    ansible_become_pass: "{{ nas_password }}"
+    deploy_dir: "~/api_deploy"
+    docker_bin: "/usr/local/bin/docker"
+    # Relative path to backend project from this client directory
+    backend_path: "../cpp-api-server"
+
+  tasks:
+    - name: 📂 (Local) Bundle and Stream Source to NAS
+      # We use sshpass to pass the prompted password to the background SSH stream
+      delegate_to: localhost
+      shell: |
+        tar -czf - -C {{ backend_path }} src -C {{ backend_path }}/docker Dockerfile.prod | \
+        sshpass -p '{{ nas_password }}' ssh -o StrictHostKeyChecking=no -p {{ ansible_port }} {{ ansible_user }}@{{ inventory_hostname }} "mkdir -p {{ deploy_dir }} && tar -xzf - -C {{ deploy_dir }}"
+      register: transfer_result
+
+    - name: 🛠️  Build and Restart Container on NAS (Indestructible Mode)
+      delegate_to: localhost
+      shell: |
+        sshpass -p '{{ nas_password }}' ssh -tt -o StrictHostKeyChecking=no -p {{ ansible_port }} {{ ansible_user }}@{{ inventory_hostname }} "
+          cd {{ deploy_dir }} && \
+          echo '🛠️  Step 1: Building (Compiling inside Docker)...' && \
+          sudo {{ docker_bin }} build -t cpp-api-server -f Dockerfile.prod . || { echo '❌ Build failed! Aborting.'; exit 1; } && \
+          
+          echo '💣 Step 2: Clearing old container...' && \
+          sudo {{ docker_bin }} rm -f cpp-api || true && \
+          
+          echo '🚀 Step 3: Starting new container (Host Network)...' && \
+          sudo {{ docker_bin }} run -d \
+            --net=host \
+            --restart unless-stopped \
+            --name cpp-api \
+            -v /proc:/host_proc:ro \
+            -v /sys:/host_sys:ro \
+            -v /volume1:/volume1:ro \
+            -v /volume2:/volume2:ro \
+            -v /volume3:/volume3:ro \
+            -v /volume4:/volume4:ro \
+            -v /volume5:/volume5:ro \
+            -v /volume6:/volume6:ro \
+            -v /volume7:/volume7:ro \
+            -e PROC_PREFIX=/host_proc \
+            -e SYS_PREFIX=/host_sys \
+            cpp-api-server || { echo '❌ Run failed!'; exit 1; } && \
+          
+          echo '🔍 Step 4: Verification...' && \
+          sleep 2 && \
+          sudo {{ docker_bin }} ps | grep cpp-api && \
+          
+          rm -rf src Dockerfile.prod && \
+          exit
+        "
+
+- name: Play 2 - Deploy Angular Frontend to IONOS
+  hosts: webserver
+  gather_facts: no
+  vars:
+    app_dir: "/var/www/simulacrum-client"
+    node_version: "20.x"
+
+  tasks:
+    - name: Update apt cache
+      become: yes
+      apt: update_cache=yes
+
+    - name: Install dependencies (Node/PM2/Rsync)
+      become: yes
+      shell: |
+        curl -fsSL https://deb.nodesource.com/setup_{{ node_version }} | bash -
+        apt-get install -y nodejs rsync
+        npm install -y pm2 -g
+
+    - name: Create app directory
+      become: yes
+      file: path={{ app_dir }} state=directory owner=root group=root mode='0755'
+
+    - name: Sync Angular files
+      synchronize:
+        src: ./
+        dest: "{{ app_dir }}/"
+        recursive: yes
+        delete: yes
+        rsync_opts:
+          - "--exclude=.next"
+          - "--exclude=node_modules"
+          - "--exclude=ansible"
+          - "--exclude=.git"
+          - "--exclude=.angular"
+          - "--exclude=.vscode"
+      delegate_to: localhost
+
+    - name: Build and Serve Front
+      become: yes
+      shell: |
+        npm install
+        npm run build
+        npm install -g serve
+        pm2 delete simulacrum-client || true
+        pm2 start serve --name "simulacrum-client" -- -s dist/simulacrum-client/browser -p 3001
+      args:
+        chdir: "{{ app_dir }}"

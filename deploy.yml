@@ -1,0 +1,57 @@
+---
+- name: Deploy Simulacrum Client to IONOS (Co-existence Mode)
+  hosts: webserver
+  vars:
+    app_dir: "/var/www/simulacrum-client"
+    node_version: "20.x"
+    app_port: 3001
+
+  tasks:
+    - name: Update apt cache
+      become: yes
+      apt: update_cache=yes
+
+    - name: Install Node.js and PM2
+      become: yes
+      shell: |
+        curl -fsSL https://deb.nodesource.com/setup_{{ node_version }} | bash -
+        apt-get install -y nodejs rsync
+        npm install -y pm2 -g
+
+    - name: Create dedicated app directory
+      become: yes
+      file: path={{ app_dir }} state=directory owner=root group=root mode='0755'
+
+    # TASK REMOVED: "Copy project files" was deleted because it had illegal parameters
+    # and was redundant with the synchronize task below.
+
+    - name: Sync project files
+      synchronize:
+        src: ./
+        dest: "{{ app_dir }}/"
+        recursive: yes
+        delete: yes
+        rsync_opts:
+          - "--exclude=.next"
+          - "--exclude=node_modules"
+          - "--exclude=ansible"
+          - "--exclude=.git"
+      delegate_to: localhost
+      become: no
+
+    - name: Build Application
+      become: yes
+      shell: |
+        npm install
+        npm run build
+      args:
+        chdir: "{{ app_dir }}"
+
+    - name: Start App on Port 3001 via PM2
+      become: yes
+      shell: |
+        npm install -g serve
+        pm2 delete simulacrum-client || true
+        TZ=Europe/Zurich pm2 start serve --name "simulacrum-client" -- -s dist/simulacrum-client/browser -p 3001
+      args:
+        chdir: "{{ app_dir }}"
