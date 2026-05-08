@@ -1021,22 +1021,25 @@ footer {
   }
 }
 
-/* 🎭 SWAGGER OVERLAY & DARK THEMES ✨ */
+/* 🎭 SWAGGER OVERLAY (Interactive Window) ✨ */
 .swagger-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 30%;
-  height: 45%;
-  background: rgba(15, 23, 42, 0.85);
-  backdrop-filter: blur(20px);
+  top: 10%;
+  left: 10%;
+  width: 75%;
+  height: auto;
+  max-width: 80%;
+  max-height: 80%;
+  background: rgba(43, 64, 114, 0.92);
+  /* Softer backdrop for focus */
+  backdrop-filter: blur(8px);
   z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
   opacity: 0;
   visibility: hidden;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s ease;
 }
 
 .swagger-overlay.visible {
@@ -1045,17 +1048,37 @@ footer {
 }
 
 .swagger-content {
-  width: 90%;
-  height: 90%;
+  width: 70%;
+  height: 80%;
+  min-width: 450px;
+  min-height: 250px;
+  max-width: 95vw;
+  max-height: 95vh;
   background: #1e293b;
-  border: 1px solid rgba(59, 130, 246, 0.2);
-  border-radius: 20px;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 16px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  /* Important for resize */
+  resize: both;
+  box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.7);
   transform: scale(0.95);
-  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), height 0.3s ease, width 0.3s ease;
+}
+
+.swagger-content.collapsed {
+  height: 52px !important;
+  width: 450px !important;
+  min-height: 52px;
+  resize: none;
+  overflow: hidden;
+}
+
+.swagger-content.collapsed .swagger-ui-viewport,
+.swagger-content.collapsed .swagger-loader-state,
+.swagger-content.collapsed .swagger-error-state {
+  display: none !important;
 }
 
 .swagger-overlay.visible .swagger-content {

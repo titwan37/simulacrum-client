@@ -16,16 +16,16 @@ import { toSignal } from '@angular/core/rxjs-interop';
         <div class="header-top-bar">
           <div class="header-left">
             <!-- 🌓 THEME TOGGLE -->
-            <div class="status-badge" [class.online]="!!statsSignal() && !statsError()">
-              <span class="pulse"></span>
-              {{ statsSignal() && !statsError() ? 'LIVE' : (statsError() ? 'OFFLINE' : 'CONNECTING') }}
-            </div>
             <div class="sys-time" *ngIf="statsSignal()?.sys_time as time">
-              Remote System Time: {{ time }}
+              Remote Time: {{ time }}
             </div>
             <button class="theme-toggle-btn" (click)="toggleTheme()" [title]="isDarkMode() ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
               <span class="icon">{{ isDarkMode() ? '🌙' : '☀️' }}</span>
             </button>
+            <div class="status-badge" [class.online]="!!statsSignal() && !statsError()">
+              <span class="pulse"></span>
+              {{ statsSignal() && !statsError() ? 'LIVE' : (statsError() ? 'OFFLINE' : 'CONNECTING') }}
+            </div>
           </div>
 
           <!-- 📜 API SPEC BUTTON -->
@@ -225,12 +225,15 @@ import { toSignal } from '@angular/core/rxjs-interop';
 
       <!-- 🎭 SWAGGER UI OVERLAY -->
       <div class="swagger-overlay" [class.visible]="isSwaggerVisible()" (click)="toggleSwagger()">
-        <div class="swagger-content" (click)="$event.stopPropagation()">
+        <div class="swagger-content" [class.collapsed]="isSwaggerCollapsed()" (click)="$event.stopPropagation()">
             <div class="swagger-header">
                 <h3>📖 API Discovery Service</h3>
                 <div class="header-actions">
                     <button class="download-btn" (click)="downloadSpec()" title="Download Raw Specification">
                         <span>📥</span> Spec
+                    </button>
+                    <button class="control-btn mini" (click)="toggleSwaggerCollapse()" [title]="isSwaggerCollapsed() ? 'Expand' : 'Minimize'">
+                        {{ isSwaggerCollapsed() ? '□' : '—' }}
                     </button>
                     <button class="close-btn" (click)="toggleSwagger()">×</button>
                 </div>
@@ -427,6 +430,7 @@ export class AppComponent {
   swaggerErrorMessage = signal<string | null>(null);
   private isInitializing = false;
   private swaggerLoaded = false;
+  isSwaggerCollapsed = signal(false);
 
   // 🔧 JS Debug Overlay State
   isJsDebugVisible = signal(true);
@@ -480,6 +484,10 @@ export class AppComponent {
     if (this.isSwaggerVisible() && !this.swaggerLoaded) {
       this.initSwagger();
     }
+  }
+
+  toggleSwaggerCollapse() {
+    this.isSwaggerCollapsed.update(v => !v);
   }
 
   downloadSpec() {
@@ -546,7 +554,7 @@ export class AppComponent {
 
       win.SwaggerUIBundle({
         url: specUrl,
-        dom_id: 'swagger-ui',
+        dom_id: '#swagger-ui',
         deepLinking: true,
         presets: [
           win.SwaggerUIBundle.presets.apis,
@@ -624,6 +632,9 @@ export class AppComponent {
     const pushToLog = (args: any[], type: 'err' | 'warn' | 'log') => {
       const time = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
       const text = args.map(arg => {
+        if (arg instanceof Error) {
+          return `${arg.name}: ${arg.message}`;
+        }
         if (typeof arg === 'object') {
           try { return JSON.stringify(arg).slice(0, 500); } catch { return '[Complex Object]'; }
         }
