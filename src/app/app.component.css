@@ -67,7 +67,7 @@
   margin: 0 auto;
   position: relative;
   min-height: 100vh;
-  padding-top: 1.5rem;
+  padding-top: 0.5rem;
   padding-bottom: 3.5rem;
   /* Space for footer */
   box-sizing: border-box;
@@ -77,7 +77,7 @@
 
 header {
   text-align: center;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -88,7 +88,7 @@ header {
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  margin-bottom: 1rem;
+  margin-bottom: 0.25rem;
   padding: 0.5rem 0;
   z-index: 100;
 }
@@ -134,7 +134,7 @@ header {
   /* Reduced from 3rem */
   font-weight: 700;
   letter-spacing: -0.02em;
-  margin: 0.5rem 0 0.25rem;
+  margin: 0 0 0.25rem;
   /* Reduced margins */
 }
 
@@ -447,7 +447,7 @@ header {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.4rem;
   /* Compressed */
   flex-shrink: 0;
 }
@@ -478,7 +478,7 @@ header {
   flex-direction: column;
   justify-content: center;
   /* Center content vertically in the available stretch space */
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   flex-shrink: 0;
 }
 
@@ -488,7 +488,7 @@ header {
   /* Compressed from 2.25rem */
   font-weight: 700;
   line-height: 1;
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.2rem;
   color: var(--text-primary);
 }
 
@@ -527,7 +527,7 @@ header {
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   background: rgba(0, 0, 0, 0.2);
-  padding: 0.65rem;
+  padding: 0.4rem;
   border-radius: 10px;
   flex-shrink: 0;
 }
@@ -675,7 +675,7 @@ header {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.5rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
 }
 
 .net-item {
@@ -734,7 +734,7 @@ header {
 }
 
 .net-chart {
-  margin-top: 0.75rem;
+  margin-top: 0.4rem;
   height: 40px;
   position: relative;
   background: rgba(0, 0, 0, 0.2);
@@ -807,26 +807,28 @@ footer {
 }
 
 .tech-stack-card {
-  position: relative;
-  margin: 1rem auto 1.5rem auto;
   background: var(--glass-card-bg);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--accent-primary);
   border-radius: 12px;
-  padding: 0.65rem 1rem;
-  /* Compact height */
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
+  padding: 0.15rem 0.4rem;
+  margin: 0.2rem 1.5rem auto;
   font-family: 'JetBrains Mono', monospace;
+  position: absolute;
+  bottom: 20px;
+  /* Compact height */
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-direction: column;
+  display: flex;
   width: 320px;
+  gap: 0.4rem;
   /* ~8cm wide footprint */
   box-shadow: 0 8px 32px -4px var(--shadow-color);
+  transform: translateX(-50%);
   z-index: 10;
-  margin-top: auto;
-  /* Pushes card down dynamically */
+  left: 50%;
+  /* Center the card horizontally */
 }
 
 .tech-stack-card:hover {
@@ -1028,9 +1030,9 @@ footer {
   left: 10%;
   width: 75%;
   height: auto;
-  max-width: 80%;
+  max-width: 90%;
   max-height: 80%;
-  background: rgba(43, 64, 114, 0.92);
+  background: rgba(15, 23, 42, 0.4);
   /* Softer backdrop for focus */
   backdrop-filter: blur(8px);
   z-index: 9999;
@@ -1658,13 +1660,14 @@ footer {
 /* ?? ORCHESTRATED FOOTER & STATUS ? */
 footer {
   position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 1.5rem;
   display: flex;
   flex-direction: column;
   align-items: center;
+  font-size: 10px;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0.1rem;
   gap: 1.5rem;
   z-index: 100;
 }
