@@ -41,18 +41,27 @@ import { toSignal } from '@angular/core/rxjs-interop';
 
         <h1 class="title">Synology<span>Monitor</span></h1>
         <p class="subtitle">System Health & Resource Analytics</p>
-          <div class="uptime-bar" *ngIf="statsSignal() as stats">
-            <span class="clock-icon">🕒</span> 
-            Node: <code class="tag" (click)="isJsDebugVisible.set(true)" style="cursor: pointer;" title="Show Diagnostic Monitor">NAS DS924+</code>
-            <span class="dot-separator">•</span>
-            <span class="tech-val">{{ stats.os_name || 'DSM' }}</span>
-            <span class="dot-separator">•</span>
-            Uptime: <code class="tag">{{ (stats.uptime_seconds / 3600).toFixed(1) }} hours</code>
-            <span class="dot-separator">•</span>
-            <span class="tech-val">{{ stats.cpu_model }}</span>
-            <span class="dot-separator">•</span>
-            Kernel: <code class="tag">{{ stats.kernel_version }}</code>
+
+        <!-- UPTIME / Multi Cards Layout -->
+          <div class="uptime-container" *ngIf="statsSignal() as stats">
+            <div class="uptime-bar">
+                <span class="icon">🖥️</span>
+                <span class="lbl">Node:</span>
+                <code class="tag" (click)="isJsDebugVisible.set(true)" style="cursor: pointer;" title="Show Diagnostic Monitor">NAS DS924+</code>
+                <span class="dot-separator">•</span>
+                <span class="tech-val">{{ stats.os_name || 'DSM' }}</span>
+                <span class="dot-separator">•</span>
+                <span class="lbl">Kernel:</span>
+                <code class="tag" [title]="stats.kernel_version">{{ stats.kernel_version }}</code>
+            </div>
+            <div class="uptime-bar">
+                <span class="tech-val" [title]="stats.cpu_model">{{ stats.cpu_model }}</span>
+                <span class="dot-separator">•</span>
+                <span class="icon">🕒</span>Runtime Metrics
+                <code class="tag">{{ (stats.uptime_seconds / 3600).toFixed(1) }} hours</code>
+            </div>
           </div>
+
       </header>
         
       <div *ngIf="!statsSignal()" class="skeleton-grid">
@@ -61,6 +70,8 @@ import { toSignal } from '@angular/core/rxjs-interop';
 
       <div *ngIf="statsSignal() as stats">
         <div class="stats-grid">
+
+
           <!-- RAM CARD -->
           <div class="glass-card ram">
             <div class="card-header">
@@ -181,25 +192,55 @@ import { toSignal } from '@angular/core/rxjs-interop';
           </svg>
         </div>
 
-        <!-- 🧬 SYSTEM HEARTBEAT MATRIX (Heatmap Waterfall) ✨ -->
-        <div class="heatmap-container" [class.frenzy]="isFrenzy()" *ngIf="statsSignal()">
-          <div class="heatmap-header">SYSTEM PRESSURE MATRIX (60s Pulse)</div>
-          <div class="heatmap-body">
-            <div class="heatmap-row" *ngFor="let row of heatmapMatrix()">
-              <label class="row-label">{{ row.label }}</label>
-              <div class="row-cells">
-                <div class="heatmap-cell" 
-                  *ngFor="let intensity of row.cells" 
-                  [style.background]="'hsl(var(--heat-h, 240), 100%, ' + (20 + (intensity * 60)) + '%)'"
-                  [style.opacity]="0.3 + (intensity * 0.7)"
-                  [title]="row.label + ': ' + (intensity * 100).toFixed(0) + '%'">
+        <!-- 🧬 SPLIT GRID CONTAINER FOR HEATMAP & VOLUMES -->
+        <div class="matrix-split-layout" *ngIf="statsSignal()">
+          
+          <!-- LEFT SIDE: SYSTEM PRESSURE MATRIX -->
+          <div class="heatmap-container" [class.frenzy]="isFrenzy()">
+            <div class="heatmap-header">SYSTEM PRESSURE MATRIX (60s Pulse)</div>
+            <div class="heatmap-body">
+              <div class="heatmap-row" *ngFor="let row of heatmapMatrix()">
+                <label class="row-label">{{ row.label }}</label>
+                <div class="row-cells">
+                  <div class="heatmap-cell" 
+                    *ngFor="let intensity of row.cells" 
+                    [style.background]="'hsl(calc(var(--heat-h, 240) - (' + (intensity * 240) + ')), 95%, ' + (35 + (intensity * 15)) + '%)'"
+                    [style.opacity]="0.4 + (intensity * 0.6)"
+                    [title]="row.label + ': ' + (intensity * 100).toFixed(0) + '%'">
+                  </div>
                 </div>
               </div>
             </div>
           </div>
+
+          <!-- RIGHT SIDE: DOCKABLE 🗄️ MULTI-VOLUME MONITOR (Floating Overlay) -->
+          <div class="volumes-overlay inline-docked" *ngIf="isVolumesVisible()" [class.collapsed]="isVolumesCollapsed()">
+            <div class="debug-header">
+              <div class="header-main">
+                <span class="icon">🗄️</span>
+                <h3>Volumes Monitor</h3>
+              </div>
+              <div class="debug-controls">
+                <button class="control-btn mini" (click)="toggleVolumesCollapse()" [title]="isVolumesCollapsed() ? 'Expand' : 'Minimize'">
+                  {{ isVolumesCollapsed() ? '□' : '—' }}
+                </button>
+                <button class="control-btn close" (click)="toggleVolumesVisible()" title="Dispose Monitor">×</button>
+              </div>
+            </div>
+            <div class="debug-content" *ngIf="!isVolumesCollapsed()">
+                <div class="volume-row" *ngFor="let vol of statsSignal()?.volumes">
+                  <span class="vol-label">{{ vol.name.replace('Volume ', 'V') }}</span>
+                  <div class="mini-bar-track">
+                    <div class="mini-bar-fill" [style.width.%]="vol.percent"></div>
+                  </div>
+                  <span class="vol-percent">{{ vol.percent }}%</span>
+                </div>
+            </div>
+          </div>
+
         </div>
 
-          <!-- 🧬 SYSTEM DNA CARD (Wide Landscape Format) ✨ -->
+        <!-- 🧬 SYSTEM DNA CARD (Wide Landscape Format) ✨ -->
           <div class="tech-stack-card">
             <div class="tech-header">
               <span class="icon">🧬</span> SYSTEM DNA <span class="icon">✨</span>
@@ -266,30 +307,6 @@ import { toSignal } from '@angular/core/rxjs-interop';
         </div>
       </div>
 
-      <!-- 🗄️ MULTI-VOLUME MONITOR (Floating Overlay) -->
-      <div class="volumes-overlay" *ngIf="isVolumesVisible()" [class.collapsed]="isVolumesCollapsed()">
-        <div class="debug-header">
-          <div class="header-main">
-            <span class="icon">🗄️</span>
-            <h3>Volumes Monitor</h3>
-          </div>
-          <div class="debug-controls">
-            <button class="control-btn mini" (click)="toggleVolumesCollapse()" [title]="isVolumesCollapsed() ? 'Expand' : 'Minimize'">
-              {{ isVolumesCollapsed() ? '□' : '—' }}
-            </button>
-            <button class="control-btn close" (click)="toggleVolumesVisible()" title="Dispose Monitor">×</button>
-          </div>
-        </div>
-        <div class="debug-content" *ngIf="!isVolumesCollapsed()">
-            <div class="volume-row" *ngFor="let vol of statsSignal()?.volumes">
-              <span class="vol-label">{{ vol.name.replace('Volume ', 'V') }}</span>
-              <div class="mini-bar-track">
-                <div class="mini-bar-fill" [style.width.%]="vol.percent"></div>
-              </div>
-              <span class="vol-percent">{{ vol.percent }}%</span>
-            </div>
-        </div>
-      </div>
 
       <!-- 📊 PROCESS MONITOR (Floating Overlay) -->
       <div class="process-overlay" *ngIf="isProcessVisible()" [class.collapsed]="isProcessCollapsed()">
@@ -400,22 +417,27 @@ export class AppComponent {
   // 🧬 Heartbeat Heatmap (60 datapoints = 1 minute pulse)
   heartbeatBuffer = signal<SystemStats[]>([]);
 
-  // 🔥 Heatmap Matrix Projector
+  // 🔥 Heatmap Matrix Projector with Dynamic Contrast Scaling
   heatmapMatrix = computed(() => {
     const buffer = this.heartbeatBuffer();
-    // Return a dummy matrix if buffer is empty to maintain layout stability
+
     const metrics = [
       { label: 'CPU', val: (s: SystemStats) => (s && s.cpu_percent !== undefined ? s.cpu_percent / 100 : 0) },
       { label: 'RAM', val: (s: SystemStats) => (s && s.ram_percent !== undefined ? s.ram_percent / 100 : 0) },
-      { label: 'LOAD', val: (s: SystemStats) => (s && s.load_avg !== undefined ? Math.min(s.load_avg / 4, 1) : 0) },
-      { label: 'NET-RX', val: (s: SystemStats) => (s && s.net_rx_mbps !== undefined ? Math.min(s.net_rx_mbps / 100, 1) : 0) },
-      { label: 'NET-TX', val: (s: SystemStats) => (s && s.net_tx_mbps !== undefined ? Math.min(s.net_tx_mbps / 100, 1) : 0) },
+      // Dynamic scaling: uses a lower denominator (2.5) so load spikes pop noticeably
+      { label: 'LOAD', val: (s: SystemStats) => (s && s.load_avg !== undefined ? Math.min(s.load_avg / 2.5, 1) : 0) },
+      { label: 'NET-RX', val: (s: SystemStats) => (s && s.net_rx_mbps !== undefined ? Math.min(s.net_rx_mbps / 50, 1) : 0) },
+      { label: 'NET-TX', val: (s: SystemStats) => (s && s.net_tx_mbps !== undefined ? Math.min(s.net_tx_mbps / 20, 1) : 0) },
       { label: 'DISK', val: (s: SystemStats) => (s && s.disk_percent !== undefined ? s.disk_percent / 100 : 0) }
     ];
 
     return metrics.map(m => ({
       label: m.label,
-      cells: buffer.map(s => m.val(s))
+      cells: buffer.map((s: SystemStats) => {
+        const rawIntensity = m.val(s);
+        // Apply an exponential curve transformation so high consumption values jump out
+        return Math.pow(rawIntensity, 1.5);
+      })
     }));
   });
 
@@ -434,7 +456,7 @@ export class AppComponent {
 
   // 🔧 JS Debug Overlay State
   isJsDebugVisible = signal(true);
-  isJsDebugCollapsed = signal(false);
+  isJsDebugCollapsed = signal(true);
 
   // 🌓 Theme Logic (Default to system preference or time-of-day)
   isDarkMode = signal(true);
@@ -454,30 +476,12 @@ export class AppComponent {
     this.isDarkMode.update((v: boolean) => !v);
     localStorage.setItem('simulacrum-theme', this.isDarkMode() ? 'dark' : 'light');
   }
-
-  toggleJsDebugCollapse() {
-    this.isJsDebugCollapsed.update((v: boolean) => !v);
-  }
-
-  toggleJsDebugVisible() {
-    this.isJsDebugVisible.update((v: boolean) => !v);
-  }
-
-  toggleVolumesCollapse() {
-    this.isVolumesCollapsed.update((v: boolean) => !v);
-  }
-
-  toggleVolumesVisible() {
-    this.isVolumesVisible.update(v => !v);
-  }
-
-  toggleProcessCollapse() {
-    this.isProcessCollapsed.update(v => !v);
-  }
-
-  toggleProcessVisible() {
-    this.isProcessVisible.update(v => !v);
-  }
+  toggleJsDebugCollapse() { this.isJsDebugCollapsed.update((v: boolean) => !v); }
+  toggleJsDebugVisible() { this.isJsDebugVisible.update((v: boolean) => !v); }
+  toggleVolumesCollapse() { this.isVolumesCollapsed.update((v: boolean) => !v); }
+  toggleVolumesVisible() { this.isVolumesVisible.update((v: boolean) => !v); }
+  toggleProcessCollapse() { this.isProcessCollapsed.update((v: boolean) => !v); }
+  toggleProcessVisible() { this.isProcessVisible.update((v: boolean) => !v); }
 
   toggleSwagger() {
     this.isSwaggerVisible.update((v: boolean) => !v);
@@ -596,8 +600,7 @@ export class AppComponent {
     const width = 1000;
     const height = 100;
     const step = width / (data.length - 1);
-
-    return data.map((val, i) => {
+    return data.map((val: number, i: number) => {
       const x = i * step;
       // Map 0-100% to height-10px to 10px (inverted for SVG)
       const y = height - (val / 100 * (height - 20) + 10);

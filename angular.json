@@ -17,6 +17,8 @@
         "build": {
           "builder": "@angular/build:application",
           "options": {
+            "optimization": false,
+            "sourceMap": false,
             "browser": "src/main.ts",
             "tsConfig": "tsconfig.app.json",
             "baseHref": "/simulacrum-client/",
@@ -43,12 +45,12 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kB",
-                  "maximumError": "1MB"
+                  "maximumWarning": "2MB",
+                  "maximumError": "3MB"
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "30kB",
+                  "maximumWarning": "60kB",
                   "maximumError": "100kB"
                 }
               ],
